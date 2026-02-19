@@ -66,22 +66,22 @@
     <header>
         <div class="container">
             <h1>Dashboard de Comunicação da Frota</h1>
-            <p class="subtitle">RIO NEGRO - Gerado em 19/02/2026 às 19:12:53</p>
+            <p class="subtitle">RIO NEGRO - Gerado em 19/02/2026 às 20:12:53</p>
         </div>
     </header>
 
     <div class="main-content container">
         <div class="kpi-container">
-            <div class="kpi-card online"><span class="value">1</span><span class="label">Ativos</span></div>
+            <div class="kpi-card online"><span class="value">7</span><span class="label">Ativos</span></div>
             <div class="kpi-card offline"><span class="value">0</span><span class="label">Inativos</span></div>
-            <div class="kpi-card total"><span class="value">1</span><span class="label">Total Frota</span></div>
+            <div class="kpi-card total"><span class="value">7</span><span class="label">Total Frota</span></div>
             <div class="kpi-card rate"><span class="value">100.0%</span><span class="label">Taxa de Comunicação</span></div>
         </div>
 
         <div class="controls">
             <div class="tab-nav">
                 <button onclick="showTab('inativos')" class="active">Inativos (0)</button>
-                <button onclick="showTab('ativos')">Ativos (1)</button>
+                <button onclick="showTab('ativos')">Ativos (7)</button>
             </div>
             </div>
 
@@ -94,12 +94,54 @@
         </div>
         <div id="ativos" class="tab-content">
             <div class="grid-container" id="ativos-body">
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="171404" onclick="showVehicleDetails('171404')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">171404</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 20:06</span>
+                </div>
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300410" onclick="showVehicleDetails('300410')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">300410</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 19:45</span>
+                </div>
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300415" onclick="showVehicleDetails('300415')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">300415</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 20:04</span>
+                </div>
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300421" onclick="showVehicleDetails('300421')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">300421</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 20:09</span>
+                </div>
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300429" onclick="showVehicleDetails('300429')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">300429</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 19:43</span>
+                </div>
+                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55002" onclick="showVehicleDetails('55002')">
+                    <div class="vehicle-header">
+                        <span class="vehicle-prefix">55002</span>
+                        <span class="vehicle-status status-online">ONLINE</span>
+                    </div>
+                    <span class="timestamp">Última: 🌆 19/02/2026 20:09</span>
+                </div>
                 <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55004" onclick="showVehicleDetails('55004')">
                     <div class="vehicle-header">
                         <span class="vehicle-prefix">55004</span>
                         <span class="vehicle-status status-online">ONLINE</span>
                     </div>
-                    <span class="timestamp">Última: 🌆 19/02/2026 18:56</span>
+                    <span class="timestamp">Última: 🌆 19/02/2026 19:56</span>
                 </div></div>
             <div class="no-results" id="no-results-ativos">Nenhum veículo ativo encontrado.</div>
         </div>
@@ -115,8 +157,8 @@
     </div>
 
 <script>
-    const veiculoData = {"55004": {"serie": "66105.0", "versao": "91.13", "eod": "221.0"}};
-    const comunicacoesData = {"55004": [{"dataHora": "19/02/2026 18:56:22", "tempoSegundos": "15.0"}]};
+    const veiculoData = {"171404": {"serie": "66351.0", "versao": "91.13", "eod": "221.0"}, "300410": {"serie": "66523.0", "versao": "91.13", "eod": "221.0"}, "300415": {"serie": "66920.0", "versao": "91.13", "eod": "221.0"}, "300421": {"serie": "66774.0", "versao": "91.13", "eod": "221.0"}, "300429": {"serie": "67841.0", "versao": "91.13", "eod": "221.0"}, "55002": {"serie": "66184.0", "versao": "91.13", "eod": "221.0"}, "55004": {"serie": "66105.0", "versao": "91.13", "eod": "221.0"}};
+    const comunicacoesData = {"171404": [{"dataHora": "19/02/2026 20:06:54", "tempoSegundos": "14.0"}, {"dataHora": "19/02/2026 19:32:38", "tempoSegundos": "49.0"}], "300410": [{"dataHora": "19/02/2026 19:45:55", "tempoSegundos": "11.0"}, {"dataHora": "19/02/2026 19:15:28", "tempoSegundos": "16.0"}], "300415": [{"dataHora": "19/02/2026 20:04:57", "tempoSegundos": "11.0"}, {"dataHora": "19/02/2026 19:34:29", "tempoSegundos": "21.0"}], "300421": [{"dataHora": "19/02/2026 20:09:13", "tempoSegundos": "22.0"}], "300429": [{"dataHora": "19/02/2026 19:43:30", "tempoSegundos": "16.0"}], "55002": [{"dataHora": "19/02/2026 20:09:12", "tempoSegundos": "11.0"}, {"dataHora": "19/02/2026 19:38:44", "tempoSegundos": "24.0"}], "55004": [{"dataHora": "19/02/2026 19:56:42", "tempoSegundos": "11.0"}, {"dataHora": "19/02/2026 19:25:49", "tempoSegundos": "10.0"}, {"dataHora": "19/02/2026 18:56:22", "tempoSegundos": "15.0"}]};
     let currentTab = 'inativos';
     function showTab(tabName) {
         currentTab = tabName;
