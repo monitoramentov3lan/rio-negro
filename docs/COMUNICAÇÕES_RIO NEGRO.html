@@ -1,309 +1,620 @@
 <!DOCTYPE html>
-<html lang="pt-br"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comunicação da Frota - RIO NEGRO</title>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoramento - RIO NEGRO</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-    * { box-sizing: border-box; }
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background-color:#f0f2f5;color:#333;
-        font-size: 16px; line-height: 1.6;
-        display:flex; flex-direction:column; min-height:100vh
+    :root {
+        --primary: #2563eb; --primary-dark: #1e40af; --secondary: #64748b;
+        --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+        --bg: #f3f4f6; --card-bg: #ffffff; --text: #1f2937; --text-light: #6b7280;
+        --border: #e5e7eb; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
-    .container { width: 95%; max-width: 1600px; margin: 0 auto; }
-    header{background-color:#fff;border-bottom:1px solid #ddd;padding:15px 0; box-shadow:0 1px 3px rgba(0,0,0,.05) }
-    header .container { padding: 0 20px; text-align: center; }
-    h1{margin:0;color:#2c3e50;font-size:1.5em}
-    .subtitle{font-size:.9em;color:#7f8c8d;margin-top:2px}
-    .main-content{flex:1; padding: 20px 0;}
-    .kpi-container{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:20px}
-    .kpi-card{background-color:#fff;border-radius:8px;padding:20px;box-shadow:0 2px 4px rgba(0,0,0,.08);border-left:5px solid; text-align: center; }
-    .kpi-card .value{ font-size: 2.2em; font-weight: 700; display:block;margin-bottom:5px }
-    .kpi-card .label{ font-size: 1em; color:#555;text-transform:uppercase; letter-spacing: 0.5px; }
-    .kpi-card.online{border-left-color:#27ae60}.kpi-card.online .value{color:#27ae60}
-    .kpi-card.offline{border-left-color:#e74c3c}.kpi-card.offline .value{color:#e74c3c}
-    .kpi-card.total{border-left-color:#3498db}.kpi-card.total .value{color:#3498db}
-    .kpi-card.rate{border-left-color:#27ae60}.kpi-card.rate .value{color:#27ae60}
-    .controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;background-color:#fff;padding:15px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.08)}
-    .tab-nav button{ font-size: 1.1em; padding:10px 15px;border:none;background-color:transparent;color:#555;cursor:pointer;border-bottom:3px solid transparent;margin-right:10px;font-weight:600 }
-    .tab-nav button.active{color:#3498db;border-bottom-color:#3498db}
-    #search{padding:10px 15px;border-radius:6px;border:1px solid #ddd;font-size:1em;width:300px}
-    .toggle-dark-mode{padding:10px 15px;border:none;border-radius:6px;background-color:#7f8c8d;color:white;cursor:pointer;font-size:1em;transition:background-color .3s}
-    .toggle-dark-mode:hover{background-color:#5f6f7d}
-    .tab-content{display:none;background-color:#fff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.08);overflow:hidden}
-    .tab-content.active{display:block}
-    table{width:100%;border-collapse:collapse}
-    th,td{ padding: 14px 16px; border-bottom:1px solid #eee; font-size: 0.95em; text-align: center; }
-    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
-    th{ background-color:#f9f9f9; font-size: .9em; text-transform:uppercase;color:#555; font-weight: 700; }
-    tr:hover{background-color:#f5f7fa}
-    .status{ font-weight: 700; padding:4px 8px;border-radius:12px;color:white;font-size:.85em;text-align:center; min-width: 110px; display: inline-block; }
-    .status-offline{background-color:#e74c3c}
-    .details-link{color:#3498db;text-decoration:none;font-weight:600}
-    .details-link:hover{text-decoration:underline}
-    .grid-container{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;padding:20px}
-    .vehicle{background-color:#fdfdfd;padding:15px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.05);cursor:pointer;transition:all .3s;border:1px solid #eee}
-    .vehicle:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.08)}
-    .vehicle-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .vehicle-prefix{font-weight:bold;font-size:18px;color:#333}
-    .vehicle-status{font-size:.8em;padding:3px 8px;border-radius:12px;text-transform:uppercase}
-    .vehicle-status.status-online{background-color:rgba(39,174,96,.1);color:#27ae60}
-    .timestamp{display:block;font-size:13px;color:#7f8c8d}
-    .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,.5);overflow:auto;animation:fadeIn .3s}
-    .modal-content{background-color:#fefefe;margin:5% auto;padding:25px;border-radius:10px;width:85%;max-width:800px;box-shadow:0 5px 20px rgba(0,0,0,.2);animation:slideIn .3s}
-    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-    @keyframes slideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
-    .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee;padding-bottom:15px;margin-bottom:20px}
-    .modal-header h2{margin:0;color:#2c3e50}
-    .close{color:#aaa;font-size:28px;font-weight:bold;cursor:pointer;transition:color .3s}.close:hover{color:#333}
-    .vehicle-details div{margin-bottom:10px;display:flex}.vehicle-details strong{min-width:120px;display:inline-block;color:#7f8c8d}
-    .comunicacoes-list{max-height:400px;overflow-y:auto;border:1px solid #eee;border-radius:8px;padding:10px;background-color:#f9f9f9}
-    .comunicacao-item{padding:10px;border-bottom:1px solid #eee}.comunicacao-item:last-child{border-bottom:none}
-    .periodo-emoji{margin-right:8px}
-    .no-results{text-align:center;padding:30px;color:#7f8c8d;font-style:italic;display:none}
-    .dark-mode{background-color:#1a1a1a;color:#e0e0e0}.dark-mode header,.dark-mode .kpi-card,.dark-mode .controls,.dark-mode .tab-content{background-color:#2d2d2d;color:#e0e0e0;border-color:#444}.dark-mode h1,.dark-mode .modal-header h2{color:#f5f5f5}.dark-mode .tab-nav button{color:#aaa}.dark-mode .tab-nav button.active{color:#3498db;border-bottom-color:#3498db}.dark-mode #search{background-color:#333;color:#fff;border-color:#444}.dark-mode .toggle-dark-mode{background-color:#555}.dark-mode .kpi-card{box-shadow:0 2px 4px rgba(0,0,0,.3)}.dark-mode table, .dark-mode th, .dark-mode td{border-color:#444}.dark-mode th{background-color:#333;color:#ccc}.dark-mode tr:nth-child(even){background-color:#2a2a2a}.dark-mode tr:hover{background-color:#3a3a3a}.dark-mode .vehicle{background-color:#333;border-color:#444;box-shadow:0 1px 3px rgba(0,0,0,.2)}.dark-mode .vehicle-prefix{color:#eee}.dark-mode .modal-content{background-color:#2d2d2d}.dark-mode .modal-header{border-color:#444}.dark-mode .vehicle-details strong{color:#aaa}.dark-mode .comunicacoes-list{background-color:#252525;border-color:#444}.dark-mode .comunicacao-item{border-bottom-color:#444}.dark-mode .close:hover{color:white}
-    .dark-mode th:first-child, .dark-mode td:first-child, .dark-mode th:nth-child(2), .dark-mode td:nth-child(2) { text-align: left; }
+    [data-theme="dark"] {
+        --primary: #3b82f6; --primary-dark: #60a5fa; --secondary: #94a3b8;
+        --bg: #0f172a; --card-bg: #1e293b; --text: #f3f4f6; --text-light: #9ca3af;
+        --border: #334155; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding-bottom: 40px; transition: background-color 0.3s, color 0.3s; }
+    
+    /* Layout & Grid */
+    .container { max-width: 1440px; margin: 0 auto; padding: 0 20px; }
+    .header-wrapper { background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 0; position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow); }
+    .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    
+    /* KPI Section */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 25px; margin-bottom: 25px; }
+    .kpi-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; }
+    .kpi-title { font-size: 0.875rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 2rem; font-weight: 700; margin-top: 5px; color: var(--text); }
+    .kpi-sub { font-size: 0.85rem; margin-top: auto; padding-top: 10px; }
+    
+    /* Controls */
+    .controls-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .search-input { flex: 1; min-width: 200px; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; transition: 0.2s; }
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: var(--border); }
+    .btn-export { background: var(--success); color: white; }
+    .btn-export:hover { filter: brightness(1.1); }
+
+    /* Charts */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 25px; }
+    .chart-box { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); height: 320px; position: relative; }
+
+    /* Tabs */
+    .tabs-nav { display: flex; gap: 5px; margin-bottom: 20px; background: var(--card-bg); padding: 5px; border-radius: 10px; border: 1px solid var(--border); width: fit-content; }
+    .tab-item { padding: 10px 25px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-light); transition: 0.2s; user-select: none; }
+    .tab-item.active { background: var(--primary); color: white; }
+    .tab-item.active.tab-crit { background: var(--danger); }
+    
+    /* Views */
+    .view-section { display: none; animation: fadeIn 0.4s ease; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Vehicle Cards */
+    .vehicle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+    .v-card { background: var(--card-bg); border-radius: 10px; padding: 15px; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
+    .v-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: var(--primary); }
+    .v-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: var(--success); }
+    .v-card.outdated::after { background: var(--warning); }
+    .v-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
+    .v-id { font-size: 1.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .v-time { font-size: 0.8rem; color: var(--text-light); display: flex; align-items: center; gap: 4px; }
+    .v-meta { font-size: 0.75rem; color: var(--text-light); background: var(--bg); padding: 4px 8px; border-radius: 4px; margin-top: 8px; display: inline-block; }
+    
+    /* Tables */
+    .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--card-bg); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: var(--bg); font-weight: 600; color: var(--text-light); font-size: 0.85rem; text-transform: uppercase; cursor: pointer; }
+    th:hover { color: var(--primary); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: rgba(0,0,0,0.02); }
+    
+    /* Badges */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+    .badge-offline { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .badge-error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+    
+    /* Modal */
+    .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+    .modal-content { background-color: var(--card-bg); margin: 5vh auto; padding: 0; border-radius: 16px; width: 90%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); animation: slideIn 0.3s; }
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 25px; }
+    .close-modal { font-size: 1.5rem; cursor: pointer; color: var(--text-light); transition: 0.2s; }
+    .close-modal:hover { color: var(--danger); }
+    
+    /* Utility */
+    #refresh-bar { height: 3px; background: var(--primary); width: 100%; position: absolute; bottom: 0; left: 0; transition: width 1s linear; }
+    .hidden { display: none !important; }
+    .text-danger { color: var(--danger); }
+    
+    @media (max-width: 768px) {
+        .header-content { flex-direction: column; align-items: flex-start; }
+        .controls-area { width: 100%; }
+        .search-box { width: 100%; }
+    }
 </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>Dashboard de Comunicação da Frota</h1>
-            <p class="subtitle">RIO NEGRO - Gerado em 05/03/2026 às 08:41:51</p>
+
+<header class="header-wrapper">
+    <div class="container header-content">
+        <div>
+            <h1 style="margin:0; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                📊 RIO NEGRO 
+                <span style="font-size: 0.8rem; font-weight: 400; padding: 4px 10px; background: var(--bg); border-radius: 20px; border: 1px solid var(--border);">v2.0</span>
+            </h1>
+            <small style="color: var(--text-light); display: block; margin-top: 5px;">Última atualização: 10:15</small>
         </div>
-    </header>
-
-    <div class="main-content container">
-        <div class="kpi-container">
-            <div class="kpi-card online"><span class="value">18</span><span class="label">Ativos</span></div>
-            <div class="kpi-card offline"><span class="value">0</span><span class="label">Inativos</span></div>
-            <div class="kpi-card total"><span class="value">18</span><span class="label">Total Frota</span></div>
-            <div class="kpi-card rate"><span class="value">100.0%</span><span class="label">Taxa de Comunicação</span></div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-outline" onclick="toggleTheme()" title="Mudar Tema">🌓 Tema</button>
+            <button class="btn btn-export" onclick="exportData()" title="Baixar CSV">📥 Exportar</button>
         </div>
+        <div id="refresh-bar"></div>
+    </div>
+</header>
 
-        <div class="controls">
-            <div class="tab-nav">
-                <button onclick="showTab('inativos')" class="active">Inativos (0)</button>
-                <button onclick="showTab('ativos')">Ativos (18)</button>
-            </div>
-            </div>
+<div class="container">
+    
+    <div class="kpi-grid">
+        <div class="kpi-card" style="border-left: 5px solid var(--success);">
+            <span class="kpi-title">Veículos Online</span>
+            <div class="kpi-value" id="kpi-online">0</div>
+            <div class="kpi-sub" style="color: var(--success);">Funcionando corretamente</div>
+        </div>
+        <div class="kpi-card" style="border-left: 5px solid var(--danger);">
+            <span class="kpi-title">Críticos / Erros</span>
+            <div class="kpi-value" id="kpi-critical">0</div>
+            <div class="kpi-sub" style="color: var(--danger);">Requer atenção imediata</div>
+        </div>
+        <div class="kpi-card" style="border-left: 5px solid var(--warning);">
+            <span class="kpi-title">Offline</span>
+            <div class="kpi-value" id="kpi-offline">0</div>
+            <div class="kpi-sub" style="color: var(--warning);">Sem comunicação hoje</div>
+        </div>
+        <div class="kpi-card" style="border-left: 5px solid var(--primary);">
+            <span class="kpi-title">Taxa de Sucesso</span>
+            <div class="kpi-value" id="kpi-rate">0%</div>
+            <div class="kpi-sub" style="color: var(--primary);">Eficiência da frota</div>
+        </div>
+    </div>
 
-        <div id="inativos" class="tab-content active">
+    <div class="charts-grid">
+        <div class="chart-box">
+            <h3 style="margin-top:0; color:var(--text-light); font-size:1rem;">Tendência (30 Dias)</h3>
+            <div style="height: 250px;"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="chart-box">
+            <h3 style="margin-top:0; color:var(--text-light); font-size:1rem;">Distribuição Atual</h3>
+            <div style="height: 250px; position: relative;"><canvas id="statusChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="controls-bar">
+        <input type="text" id="globalSearch" class="search-input" placeholder="🔍 Buscar por prefixo, erro ou versão...">
+        <select id="metaFilter" class="search-input" style="max-width: 200px;">
+            <option value="all">Todos os Filtros</option>
+            <option value="old_eod">EOD Desatualizado</option>
+            <option value="has_error">Com Erro</option>
+        </select>
+        <input type="date" id="datePicker" class="search-input" value="2026-03-05" style="max-width: 160px;">
+    </div>
+
+    <div class="tabs-nav">
+        <div class="tab-item active" onclick="switchTab('tab-online')">✅ Online</div>
+        <div class="tab-item tab-crit" onclick="switchTab('tab-critical')">🚨 Erros</div>
+        <div class="tab-item" onclick="switchTab('tab-offline')">⚠️ Offline</div>
+    </div>
+
+    <div id="tab-online" class="view-section active">
+        <div class="vehicle-grid" id="list-online"></div>
+        <div id="empty-online" class="hidden" style="text-align:center; padding:50px; color:var(--text-light)">
+            <h3>Nenhum veículo online encontrado.</h3>
+        </div>
+    </div>
+
+    <div id="tab-critical" class="view-section">
+        <div class="table-container">
             <table>
-                <thead><tr><th>Status</th><th>Prefixo</th><th>Última Comunicação</th><th>Ações</th></tr></thead>
-                <tbody id="inativos-body"></tbody>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0, 'list-critical')">Prefixo</th>
+                        <th>Status</th>
+                        <th>Erro Reportado</th>
+                        <th>Hora</th>
+                        <th>Versão</th>
+                    </tr>
+                </thead>
+                <tbody id="list-critical"></tbody>
             </table>
-            <div class="no-results" id="no-results-inativos">Nenhum veículo inativo encontrado.</div>
         </div>
-        <div id="ativos" class="tab-content">
-            <div class="grid-container" id="ativos-body">
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="171404" onclick="showVehicleDetails('171404')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">171404</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:42</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300403" onclick="showVehicleDetails('300403')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300403</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: ☀️ 05/03/2026 08:33</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300405" onclick="showVehicleDetails('300405')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300405</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:55</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300407" onclick="showVehicleDetails('300407')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300407</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:54</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300410" onclick="showVehicleDetails('300410')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300410</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:05</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300411" onclick="showVehicleDetails('300411')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300411</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:49</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300412" onclick="showVehicleDetails('300412')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300412</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:08</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300413" onclick="showVehicleDetails('300413')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300413</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:13</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300414" onclick="showVehicleDetails('300414')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300414</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: ☀️ 05/03/2026 06:22</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300416" onclick="showVehicleDetails('300416')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300416</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:04</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300419" onclick="showVehicleDetails('300419')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300419</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: ☀️ 05/03/2026 06:00</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300421" onclick="showVehicleDetails('300421')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300421</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:06</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300426" onclick="showVehicleDetails('300426')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300426</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:57</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="300429" onclick="showVehicleDetails('300429')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">300429</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:39</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55002" onclick="showVehicleDetails('55002')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">55002</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:59</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55003" onclick="showVehicleDetails('55003')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">55003</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: ☀️ 05/03/2026 06:14</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55004" onclick="showVehicleDetails('55004')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">55004</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 05:06</span>
-                </div>
-                <div class="vehicle vehicle-online veiculo-item" data-veiculo-nome="55005" onclick="showVehicleDetails('55005')">
-                    <div class="vehicle-header">
-                        <span class="vehicle-prefix">55005</span>
-                        <span class="vehicle-status status-online">ONLINE</span>
-                    </div>
-                    <span class="timestamp">Última: 🌙 05/03/2026 04:54</span>
-                </div></div>
-            <div class="no-results" id="no-results-ativos">Nenhum veículo ativo encontrado.</div>
+        <div id="empty-critical" class="hidden" style="text-align:center; padding:50px; color:var(--text-light)">
+            <h3>Nenhum erro reportado hoje! 👏</h3>
         </div>
     </div>
 
-    <div id="vehicleModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h2 id="modalTitle">Detalhes do Veículo</h2><span class="close" onclick="closeModal()">&times;</span></div>
-            <div class="vehicle-details" id="vehicleDetails"></div>
-            <h3>Histórico de Comunicações</h3>
-            <div class="comunicacoes-list" id="comunicacoesList"></div>
+    <div id="tab-offline" class="view-section">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0, 'list-offline')">Prefixo</th>
+                        <th>Status</th>
+                        <th>Última Comunicação</th>
+                        <th>Tempo Inativo</th>
+                    </tr>
+                </thead>
+                <tbody id="list-offline"></tbody>
+            </table>
+        </div>
+        <div id="empty-offline" class="hidden" style="text-align:center; padding:50px; color:var(--text-light)">
+            <h3>Toda a frota comunicou hoje!</h3>
         </div>
     </div>
+
+</div>
+
+<div id="modalInfo" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="m-title" style="margin:0">Detalhes</h2>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body" id="m-body"></div>
+    </div>
+</div>
 
 <script>
-    const veiculoData = {"171404": {"serie": "66351.0", "versao": "91.13", "eod": "221.0"}, "300403": {"serie": "66904.0", "versao": "91.13", "eod": "221.0"}, "300405": {"serie": "66936.0", "versao": "91.13", "eod": "221.0"}, "300407": {"serie": "66178.0", "versao": "91.13", "eod": "221.0"}, "300410": {"serie": "66523.0", "versao": "91.13", "eod": "221.0"}, "300411": {"serie": "66668.0", "versao": "91.13", "eod": "221.0"}, "300412": {"serie": "66378.0", "versao": "91.13", "eod": "221.0"}, "300413": {"serie": "66307.0", "versao": "91.13", "eod": "221.0"}, "300414": {"serie": "66954.0", "versao": "91.13", "eod": "221.0"}, "300416": {"serie": "66672.0", "versao": "91.13", "eod": "221.0"}, "300419": {"serie": "66632.0", "versao": "91.13", "eod": "221.0"}, "300421": {"serie": "66774.0", "versao": "91.13", "eod": "221.0"}, "300426": {"serie": "66909.0", "versao": "91.13", "eod": "221.0"}, "300429": {"serie": "67841.0", "versao": "91.13", "eod": "221.0"}, "55002": {"serie": "66184.0", "versao": "91.13", "eod": "221.0"}, "55003": {"serie": "66356.0", "versao": "91.13", "eod": "221.0"}, "55004": {"serie": "66105.0", "versao": "91.13", "eod": "221.0"}, "55005": {"serie": "66920.0", "versao": "91.13", "eod": "221.0"}};
-    const comunicacoesData = {"171404": [{"dataHora": "05/03/2026 04:42:08", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:12:18", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:42:28", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:11:29", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:40:57", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:10:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:40:55", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:11:05", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:40:38", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:08:57", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 23:38:55", "tempoSegundos": "14.0"}, {"dataHora": "04/03/2026 23:08:52", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:39:01", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:06:35", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:36:21", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:06:19", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:35:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:05:25", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 19:35:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:05:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 18:34:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 18:04:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 17:34:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 17:03:41", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 16:34:19", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 16:04:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 15:32:51", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 15:02:50", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 14:32:23", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 14:01:58", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 13:31:41", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 13:01:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 12:31:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 12:00:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:30:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:00:00", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 10:29:37", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 09:58:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 09:28:38", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:40:20", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:10:03", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:39:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:09:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:39:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:08:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:38:42", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:08:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:38:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:07:51", "tempoSegundos": "11.0"}], "300403": [{"dataHora": "05/03/2026 08:33:34", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 08:03:21", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 07:34:21", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 07:03:04", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 06:33:29", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 06:02:56", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:32:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:02:57", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:31:30", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:01:14", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:30:47", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:01:30", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:31:08", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:59:41", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:30:39", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:59:24", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:29:35", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:59:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:28:56", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:59:06", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:27:50", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 21:56:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:26:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:56:23", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:25:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:55:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:25:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 18:55:29", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 04:58:27", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:28:10", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:57:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:27:35", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 02:57:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:27:00", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:56:43", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:26:26", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:56:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:25:53", "tempoSegundos": "11.0"}], "300405": [{"dataHora": "05/03/2026 04:55:12", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:23:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:53:56", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:23:29", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:54:13", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:23:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:52:25", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:23:23", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:52:08", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:21:53", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:51:28", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 23:21:16", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:51:26", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:20:39", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 21:47:46", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 21:18:32", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 20:47:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:18:13", "tempoSegundos": "21.0"}, {"dataHora": "04/03/2026 12:22:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:52:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:21:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 10:51:23", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 10:09:04", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 09:38:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 09:09:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 08:38:13", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 08:07:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 07:38:03", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 07:07:23", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 06:37:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 06:07:46", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:37:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:07:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:36:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:06:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:36:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:06:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:35:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:05:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:35:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:04:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:34:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:03:32", "tempoSegundos": "11.0"}], "300407": [{"dataHora": "05/03/2026 04:54:59", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:23:32", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:53:43", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:23:15", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:53:33", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:23:12", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:51:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:22:43", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:51:28", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:20:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:50:23", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 23:20:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:50:33", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 22:19:32", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 21:46:39", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 21:17:27", "tempoSegundos": "25.0"}, {"dataHora": "04/03/2026 04:45:06", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:14:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:44:32", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 03:14:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:43:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:13:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:42:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:12:40", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:42:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:12:07", "tempoSegundos": "11.0"}], "300410": [{"dataHora": "05/03/2026 05:05:56", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 04:34:30", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:04:40", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:33:47", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:04:31", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:34:09", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:02:43", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:33:42", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:02:26", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:32:37", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 00:02:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:32:01", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 04:55:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:24:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:54:35", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:24:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:54:01", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:23:45", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:53:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:23:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:52:55", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:22:38", "tempoSegundos": "11.0"}], "300411": [{"dataHora": "05/03/2026 04:49:23", "tempoSegundos": "12.0"}], "300412": [{"dataHora": "05/03/2026 05:08:04", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:37:26", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:07:38", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:37:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:06:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:36:17", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:06:06", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:36:16", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:06:27", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:35:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:05:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:35:10", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:05:21", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:33:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:02:03", "tempoSegundos": "18.0"}, {"dataHora": "04/03/2026 04:57:13", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:26:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:56:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:26:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:56:06", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:25:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:55:33", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:24:47", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:54:30", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:23:47", "tempoSegundos": "11.0"}], "300413": [{"dataHora": "05/03/2026 05:13:31", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:42:27", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:12:37", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:42:22", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:11:23", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:40:51", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:10:39", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:40:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:10:59", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:40:32", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:09:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:39:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:09:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:39:01", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:06:38", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:36:10", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 21:06:47", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:35:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:05:27", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:35:17", "tempoSegundos": "17.0"}, {"dataHora": "04/03/2026 05:11:02", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:40:46", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 04:10:28", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:40:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:09:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:39:37", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:09:20", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 01:39:03", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:08:46", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:38:03", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 00:29:35", "tempoSegundos": "11.0"}], "300414": [{"dataHora": "05/03/2026 06:22:07", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:51:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:21:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:51:06", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:20:39", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:50:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:20:01", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 02:49:30", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:19:19", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:49:29", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:19:39", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:49:12", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:17:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:47:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:17:55", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:48:05", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:14:27", "tempoSegundos": "152.0"}, {"dataHora": "04/03/2026 21:54:11", "tempoSegundos": "15.0"}, {"dataHora": "04/03/2026 06:17:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:47:28", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:17:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:46:28", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:16:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:45:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:15:37", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:45:20", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:15:04", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:44:47", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:14:30", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:44:13", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:13:30", "tempoSegundos": "11.0"}], "300416": [{"dataHora": "05/03/2026 05:04:20", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:32:54", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:03:05", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:32:37", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:03:22", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:33:00", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:01:33", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:32:32", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:01:17", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:31:28", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:01:01", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:30:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:01:00", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:29:45", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:58:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:28:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:58:20", "tempoSegundos": "14.0"}, {"dataHora": "04/03/2026 04:55:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:24:48", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 03:54:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:24:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:53:58", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:23:42", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:52:59", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:22:42", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:52:26", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:22:09", "tempoSegundos": "11.0"}], "300419": [{"dataHora": "05/03/2026 06:00:16", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:30:05", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:00:15", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:28:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:58:59", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:28:32", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 02:58:14", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:27:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:56:25", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 01:27:23", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 00:56:06", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:26:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:55:51", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 23:25:38", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:55:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:24:34", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 05:48:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:18:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:48:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:18:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:47:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:17:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:46:50", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:16:33", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:46:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:15:59", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:45:43", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:15:26", "tempoSegundos": "11.0"}], "300421": [{"dataHora": "05/03/2026 05:06:53", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 04:30:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:00:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:29:55", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:59:38", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:29:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:59:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:28:48", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 00:58:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:28:15", "tempoSegundos": "11.0"}], "300426": [{"dataHora": "05/03/2026 05:57:32", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 05:27:21", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 04:57:32", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:26:05", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 03:56:16", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:25:50", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:56:07", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:25:45", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:54:18", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 01:25:16", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:54:01", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 00:24:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:53:44", "tempoSegundos": "18.0"}, {"dataHora": "04/03/2026 23:23:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:53:36", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:22:20", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:50:34", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 21:21:22", "tempoSegundos": "15.0"}, {"dataHora": "04/03/2026 04:53:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:23:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:52:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:22:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:51:58", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:21:41", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:51:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:21:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:50:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:20:10", "tempoSegundos": "11.0"}], "300429": [{"dataHora": "05/03/2026 04:39:03", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:09:14", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:39:25", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:08:26", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:37:53", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:07:42", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:37:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:08:02", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:37:36", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 00:06:20", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:36:20", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 23:06:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:36:29", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:04:04", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 21:34:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:04:13", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:33:46", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 14:51:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 14:19:58", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 13:49:41", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 13:18:59", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 12:48:42", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 05:35:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:04:47", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:34:30", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:04:13", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:33:56", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:03:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:33:23", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 02:03:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:32:48", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:02:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:32:14", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:01:31", "tempoSegundos": "11.0"}], "55002": [{"dataHora": "05/03/2026 04:59:39", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:28:12", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:58:23", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:27:55", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:58:39", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 02:28:17", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:56:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:27:51", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:56:09", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:26:20", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:55:54", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 23:25:42", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:55:53", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:24:37", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 21:53:00", "tempoSegundos": "15.0"}, {"dataHora": "04/03/2026 21:23:09", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 20:51:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:22:49", "tempoSegundos": "21.0"}, {"dataHora": "04/03/2026 12:47:43", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 12:17:26", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:46:44", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 11:16:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 10:45:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 10:15:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 09:45:13", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 09:15:34", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 08:45:53", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 08:15:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 07:45:20", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 07:14:51", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 06:44:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 06:14:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:43:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:13:40", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:43:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:13:07", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:42:50", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:12:34", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:42:17", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:10:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:40:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:09:51", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:39:08", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:08:51", "tempoSegundos": "11.0"}], "55003": [{"dataHora": "05/03/2026 06:14:28", "tempoSegundos": "13.0"}, {"dataHora": "05/03/2026 06:07:20", "tempoSegundos": "161.0"}, {"dataHora": "05/03/2026 05:56:29", "tempoSegundos": "157.0"}, {"dataHora": "05/03/2026 05:53:08", "tempoSegundos": "288.0"}, {"dataHora": "05/03/2026 05:10:14", "tempoSegundos": "14.0"}, {"dataHora": "05/03/2026 04:39:33", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:09:44", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:39:56", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:08:56", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:38:24", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:08:13", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:38:23", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:08:34", "tempoSegundos": "12.0"}, {"dataHora": "05/03/2026 00:38:06", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:06:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:36:25", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:06:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:36:35", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:04:10", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:34:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:04:22", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:33:55", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 20:03:28", "tempoSegundos": "20.0"}, {"dataHora": "04/03/2026 05:32:28", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:02:11", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:31:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:01:38", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 03:31:21", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:01:05", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:30:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:00:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:30:15", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:59:58", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:29:42", "tempoSegundos": "11.0"}], "55004": [{"dataHora": "05/03/2026 05:06:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:35:25", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:05:36", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:35:09", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:04:58", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:34:26", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:04:04", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:35:03", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 01:03:49", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:33:59", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:03:33", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:33:21", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 23:03:32", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:32:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:00:42", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:30:54", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:00:53", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 20:30:24", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:59:57", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:29:46", "tempoSegundos": "13.0"}, {"dataHora": "04/03/2026 04:39:18", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:09:01", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:38:44", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:08:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:38:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:07:55", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 01:37:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:07:23", "tempoSegundos": "10.0"}, {"dataHora": "04/03/2026 00:37:06", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:06:50", "tempoSegundos": "11.0"}], "55005": [{"dataHora": "05/03/2026 04:54:52", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 04:23:25", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 03:53:36", "tempoSegundos": "10.0"}, {"dataHora": "05/03/2026 03:23:09", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:53:27", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 02:23:05", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:51:38", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 01:22:37", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:51:22", "tempoSegundos": "11.0"}, {"dataHora": "05/03/2026 00:20:45", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:50:45", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 23:20:46", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 22:50:31", "tempoSegundos": "12.0"}, {"dataHora": "04/03/2026 22:20:31", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:47:39", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 21:18:29", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:47:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 20:18:12", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:46:45", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 19:16:45", "tempoSegundos": "14.0"}, {"dataHora": "04/03/2026 05:32:49", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 05:02:33", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:32:16", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 04:01:59", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:31:43", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 03:01:26", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:31:09", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 02:00:52", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:30:36", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 01:00:19", "tempoSegundos": "11.0"}, {"dataHora": "04/03/2026 00:30:03", "tempoSegundos": "11.0"}]};
-    let currentTab = 'inativos';
-    function showTab(tabName) {
-        currentTab = tabName;
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        document.querySelectorAll('.tab-nav button').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`.tab-nav button[onclick="showTab('${tabName}')"]`).classList.add('active');
-        // searchVehicle(); // (Desabilitado pois não há input search no HTML)
+    // Dados injetados pelo Python (Base64)
+    const FROTA = JSON.parse(atob("WyIxNzE0MDQiLCAiMzAwNDAzIiwgIjMwMDQwNSIsICIzMDA0MDciLCAiMzAwNDEwIiwgIjMwMDQxMSIsICIzMDA0MTIiLCAiMzAwNDEzIiwgIjMwMDQxNCIsICIzMDA0MTYiLCAiMzAwNDE5IiwgIjMwMDQyMSIsICIzMDA0MjYiLCAiMzAwNDI5IiwgIjU1MDAyIiwgIjU1MDAzIiwgIjU1MDA0IiwgIjU1MDA1Il0="));
+    const METADATA = JSON.parse(atob("eyIxNzE0MDQiOiB7InNlcmllIjogIjY2MzUxLjAiLCAidmVyc2FvIjogIjkxLjEzIiwgImVvZCI6ICIyMjEuMCJ9LCAiMzAwNDAzIjogeyJzZXJpZSI6ICI2NjkwNC4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjMwMDQwNSI6IHsic2VyaWUiOiAiNjY5MzYuMCIsICJ2ZXJzYW8iOiAiOTEuMTMiLCAiZW9kIjogIjIyMS4wIn0sICIzMDA0MDciOiB7InNlcmllIjogIjY2MTc4LjAiLCAidmVyc2FvIjogIjkxLjEzIiwgImVvZCI6ICIyMjEuMCJ9LCAiMzAwNDEwIjogeyJzZXJpZSI6ICI2NjUyMy4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjMwMDQxMSI6IHsic2VyaWUiOiAiNjY2NjguMCIsICJ2ZXJzYW8iOiAiOTEuMTMiLCAiZW9kIjogIjIyMS4wIn0sICIzMDA0MTIiOiB7InNlcmllIjogIjY2Mzc4LjAiLCAidmVyc2FvIjogIjkxLjEzIiwgImVvZCI6ICIyMjEuMCJ9LCAiMzAwNDEzIjogeyJzZXJpZSI6ICI2NjMwNy4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjMwMDQxNCI6IHsic2VyaWUiOiAiNjY5NTQuMCIsICJ2ZXJzYW8iOiAiOTEuMTMiLCAiZW9kIjogIjIyMS4wIn0sICIzMDA0MTYiOiB7InNlcmllIjogIjY2NjcyLjAiLCAidmVyc2FvIjogIjkxLjEzIiwgImVvZCI6ICIyMjEuMCJ9LCAiMzAwNDE5IjogeyJzZXJpZSI6ICI2NjYzMi4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjMwMDQyMSI6IHsic2VyaWUiOiAiNjY3NzQuMCIsICJ2ZXJzYW8iOiAiOTEuMTMiLCAiZW9kIjogIjIyMS4wIn0sICIzMDA0MjYiOiB7InNlcmllIjogIjY2OTA5LjAiLCAidmVyc2FvIjogIjkxLjEzIiwgImVvZCI6ICIyMjEuMCJ9LCAiMzAwNDI5IjogeyJzZXJpZSI6ICI2Nzg0MS4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjU1MDAyIjogeyJzZXJpZSI6ICI2NjE4NC4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjU1MDAzIjogeyJzZXJpZSI6ICI2NjM1Ni4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjU1MDA0IjogeyJzZXJpZSI6ICI2NjEwNS4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifSwgIjU1MDA1IjogeyJzZXJpZSI6ICI2NjkyMC4wIiwgInZlcnNhbyI6ICI5MS4xMyIsICJlb2QiOiAiMjIxLjAifX0="));
+    const HISTORY = JSON.parse(atob("eyIxNzE0MDQiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDQ6NDI6MDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDoxMjoxOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjQyOjI4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MTE6MjkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjo0MDo1NyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjEwOjQ1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6NDA6NTUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMToxMTowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjQwOjM4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MDg6NTciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzozODo1NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjA4OjUyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6Mzk6MDEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjowNjozNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjM2OjIxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MDY6MTkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDozNTo1MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIwOjA1OjI1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTk6MzU6MTQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxOTowNToyNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE4OjM0OjU3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTg6MDQ6MDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxNzozNDowOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE3OjAzOjQxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTY6MzQ6MTkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxNjowNDowOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE1OjMyOjUxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTU6MDI6NTAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxNDozMjoyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE0OjAxOjU4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTM6MzE6NDEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMzowMToyNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDEyOjMxOjA4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTI6MDA6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMTozMDoxNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDExOjAwOjAwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTA6Mjk6MzciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwOTo1ODo1NCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA5OjI4OjM4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6NDA6MjAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDoxMDowMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjM5OjQ4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MDk6MzEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjozOToxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjA4OjU3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6Mzg6NDIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTowODoyNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjM4OjA4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MDc6NTEiLCAiZSI6IG51bGx9XSwgIjMwMDQwMyI6IFt7ImQiOiAiMjAyNi0wMy0wNSAxMDowMjo1MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA5OjMzOjAyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDk6MDM6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwODozMzozNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA4OjAzOjIxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDc6MzQ6MjEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNzowMzowNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA2OjMzOjI5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDY6MDI6NTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNTozMjo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA1OjAyOjU3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6MzE6MzAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDowMToxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjMwOjQ3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MDE6MzAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjozMTowOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjU5OjQxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6MzA6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDo1OToyNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjI5OjM1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6NTk6MDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzoyODo1NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjU5OjA2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6Mjc6NTAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMTo1NjoxMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjI2OjI1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjA6NTY6MjMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDoyNTo1NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE5OjU1OjI5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTk6MjU6MTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxODo1NToyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjU4OjI3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6Mjg6MTAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo1Nzo1MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjI3OjM1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NTc6MTciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoyNzowMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjU2OjQzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MjY6MjYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo1NjowOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjI1OjUzIiwgImUiOiBudWxsfV0sICIzMDA0MDUiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDQ6NTU6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDoyMzo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjUzOjU2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MjM6MjkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjo1NDoxMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjIzOjUyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6NTI6MjUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMToyMzoyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjUyOjA4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MjE6NTMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzo1MToyOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjIxOjE2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6NTE6MjYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjoyMDozOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjQ3OjQ2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MTg6MzIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDo0NzoxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIwOjE4OjEzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTI6MjI6MzEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMTo1MjoxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDExOjIxOjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTA6NTE6MjMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMDowOTowNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA5OjM4OjQ4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDk6MDk6MDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwODozODoxMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA4OjA3OjU2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDc6Mzg6MDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNzowNzoyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA2OjM3OjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDY6MDc6NDYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNTozNzoyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjA3OjEyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MzY6NTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDowNjozOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjM2OjIyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MDY6MDUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjozNTo0OCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjA1OjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MzU6MTUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTowNDozMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjM0OjE1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MDM6MzIiLCAiZSI6IG51bGx9XSwgIjMwMDQwNyI6IFt7ImQiOiAiMjAyNi0wMy0wNSAwNDo1NDo1OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjIzOjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6NTM6NDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzoyMzoxNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjUzOjMzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MjM6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTo1MTo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjIyOjQzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6NTE6MjgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDoyMDoyNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjUwOjIzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MjA6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjo1MDozMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjE5OjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6NDY6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMToxNzoyNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjQ1OjA2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MTQ6NDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo0NDozMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjE0OjE0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NDM6NTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoxMzoxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjQyOjU3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MTI6NDAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo0MjoyNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjEyOjA3IiwgImUiOiBudWxsfV0sICIzMDA0MTAiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDU6MDU6NTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDozNDozMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjA0OjQwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MzM6NDciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzowNDozMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjM0OjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MDI6NDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTozMzo0MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjAyOjI2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MzI6MzciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDowMjoxMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjMyOjAxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6NTU6MDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDoyNDo1MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjU0OjM1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MjQ6MTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjo1NDowMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjIzOjQ1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6NTM6MjkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMToyMzoxMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjUyOjU1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MjI6MzgiLCAiZSI6IG51bGx9XSwgIjMwMDQxMSI6IFt7ImQiOiAiMjAyNi0wMy0wNSAwNDo0OToyMyIsICJlIjogbnVsbH1dLCAiMzAwNDEyIjogW3siZCI6ICIyMDI2LTAzLTA1IDA1OjA4OjA0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6Mzc6MjYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDowNzozOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjM3OjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MDY6NDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjozNjoxNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjA2OjA2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6MzY6MTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTowNjoyNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjM1OjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MDU6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzozNToxMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjA1OjIxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MzM6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjowMjowMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjU3OjEzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MjY6NTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo1NjozOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjI2OjIyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NTY6MDYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoyNTo0OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjU1OjMzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MjQ6NDciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo1NDozMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjIzOjQ3IiwgImUiOiBudWxsfV0sICIzMDA0MTMiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDU6MTM6MzEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDo0MjoyNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjEyOjM3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6NDI6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzoxMToyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjQwOjUxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MTA6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTo0MDo0OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjEwOjU5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6NDA6MzIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDowOToxOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjM5OjE4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MDk6MTciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjozOTowMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjA2OjM4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MzY6MTAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMTowNjo0NyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIwOjM1OjU0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjA6MDU6MjciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxOTozNToxNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjExOjAyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6NDA6NDYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDoxMDoyOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjQwOjExIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MDk6NTQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjozOTozNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjA5OjIwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6Mzk6MDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTowODo0NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjM4OjAzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6Mjk6MzUiLCAiZSI6IG51bGx9XSwgIjMwMDQxNCI6IFt7ImQiOiAiMjAyNi0wMy0wNSAwNjoyMjowNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA1OjUxOjQ1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDU6MjE6NDUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDo1MTowNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjIwOjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6NTA6NDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzoyMDowMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjQ5OjMwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MTk6MTkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTo0OToyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjE5OjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6NDk6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDoxNzo1NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjQ3OjU2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MTc6NTUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjo0ODowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjE0OjI3IiwgImUiOiAiKDEwMjIpOiBFcnJvIGFvIGxlciBkYWRvcyBkbyBzb2NrZXQuIn0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjU0OjExIiwgImUiOiAiKDEwMjIpOiBFcnJvIGFvIGxlciBkYWRvcyBkbyBzb2NrZXQuIn0sIHsiZCI6ICIyMDI2LTAzLTA0IDA2OjE3OjQ4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDU6NDc6MjgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNToxNzoxMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjQ2OjI4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MTY6MTEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo0NTo1NCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjE1OjM3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NDU6MjAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoxNTowNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjQ0OjQ3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MTQ6MzAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo0NDoxMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjEzOjMwIiwgImUiOiBudWxsfV0sICIzMDA0MTYiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDU6MDQ6MjAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDozMjo1NCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjAzOjA1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MzI6MzciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzowMzoyMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjMzOjAwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MDE6MzMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTozMjozMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjAxOjE3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MzE6MjgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDowMTowMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjMwOjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MDE6MDAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjoyOTo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjU4OjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6Mjg6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDo1ODoyMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjU1OjA1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MjQ6NDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo1NDozMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjI0OjE1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NTM6NTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoyMzo0MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjUyOjU5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MjI6NDIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo1MjoyNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjIyOjA5IiwgImUiOiBudWxsfV0sICIzMDA0MTkiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDY6MDA6MTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNTozMDowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA1OjAwOjE1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6Mjg6NDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzo1ODo1OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjI4OjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6NTg6MTQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjoyNzo1MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjU2OjI1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6Mjc6MjMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDo1NjowNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjI2OjE4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6NTU6NTEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzoyNTozOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjU1OjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MjQ6MzQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNTo0ODo1NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjE4OjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6NDg6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDoxODowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjQ3OjQ4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MTc6MzIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjo0Njo1MCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjE2OjMzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6NDY6MTciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMToxNTo1OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjQ1OjQzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MTU6MjYiLCAiZSI6IG51bGx9XSwgIjMwMDQyMSI6IFt7ImQiOiAiMjAyNi0wMy0wNSAwNTowNjo1MyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjMwOjI5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MDA6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzoyOTo1NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjU5OjM4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6Mjk6MjIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTo1OTowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjI4OjQ4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6NTg6MzIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDoyODoxNSIsICJlIjogbnVsbH1dLCAiMzAwNDI2IjogW3siZCI6ICIyMDI2LTAzLTA1IDA1OjU3OjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDU6Mjc6MjEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDo1NzozMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjI2OjA1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6NTY6MTYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzoyNTo1MCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjU2OjA3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6MjU6NDUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTo1NDoxOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjI1OjE2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6NTQ6MDEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDoyNDoxMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjUzOjQ0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MjM6MjUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjo1MzozNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjIyOjIwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6NTA6MzQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMToyMToyMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjUzOjMxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MjM6MTQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzo1Mjo1NyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjIyOjE1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6NTE6NTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjoyMTo0MSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjUxOjI0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MjE6MDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDo1MDoyNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjIwOjEwIiwgImUiOiBudWxsfV0sICIzMDA0MjkiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDQ6Mzk6MDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDowOToxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjM5OjI1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MDg6MjYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjozNzo1MyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjA3OjQyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6Mzc6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTowODowMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjM3OjM2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MDY6MjAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzozNjoyMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjA2OjE4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MzY6MjkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjowNDowNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjM0OjE1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MDQ6MTMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDozMzo0NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE0OjUxOjExIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTQ6MTk6NTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMzo0OTo0MSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDEzOjE4OjU5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTI6NDg6NDIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNTozNToyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjA0OjQ3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6MzQ6MzAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDowNDoxMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjMzOjU2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MDM6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjozMzoyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjAzOjA1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6MzI6NDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTowMjozMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjMyOjE0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MDE6MzEiLCAiZSI6IG51bGx9XSwgIjU1MDAyIjogW3siZCI6ICIyMDI2LTAzLTA1IDA0OjU5OjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6Mjg6MTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzo1ODoyMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjI3OjU1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6NTg6MzkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjoyODoxNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjU2OjUyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6Mjc6NTEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDo1NjowOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjI2OjIwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6NTU6NTQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzoyNTo0MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjU1OjUzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MjQ6MzciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMTo1MzowMCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjIzOjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjA6NTE6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDoyMjo0OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDEyOjQ3OjQzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTI6MTc6MjYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMTo0Njo0NCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDExOjE2OjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTA6NDU6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxMDoxNToyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA5OjQ1OjEzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDk6MTU6MzQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwODo0NTo1MyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA4OjE1OjI0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDc6NDU6MjAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNzoxNDo1MSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA2OjQ0OjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDY6MTQ6MTciLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNTo0Mzo1NyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjEzOjQwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDQ6NDM6MjQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDoxMzowNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAzOjQyOjUwIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MTI6MzQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMjo0MjoxNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjEwOjUyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDE6NDA6MDgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTowOTo1MSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjM5OjA4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MDg6NTEiLCAiZSI6IG51bGx9XSwgIjU1MDAzIjogW3siZCI6ICIyMDI2LTAzLTA1IDA2OjE0OjI4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDY6MDc6MjAiLCAiZSI6ICIoMTAyMik6IEVycm8gYW8gbGVyIGRhZG9zIGRvIHNvY2tldC4ifSwgeyJkIjogIjIwMjYtMDMtMDUgMDU6NTY6MjkiLCAiZSI6ICIoMTAyMik6IEVycm8gYW8gbGVyIGRhZG9zIGRvIHNvY2tldC4ifSwgeyJkIjogIjIwMjYtMDMtMDUgMDU6NTM6MDgiLCAiZSI6ICIoMTAxOSk6IE9jb3JyZXUgdGltZW91dCBubyBzb2NrZXQgZGUgY29tdW5pY2FcdTAwZTdcdTAwZTNvLiJ9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNToxMDoxNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDA0OjM5OjMzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6MDk6NDQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMzozOTo1NiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjA4OjU2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDI6Mzg6MjQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjowODoxMyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAxOjM4OjIzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6MDg6MzQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMDozODowNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjA2OjI1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjM6MzY6MjUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzowNjoyNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIyOjM2OjM1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MDQ6MTAiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMTozNDoyMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjA0OjIyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjA6MzM6NTUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDowMzoyOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjMyOjI4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDU6MDI6MTEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDozMTo1NCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjAxOjM4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MzE6MjEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzowMTowNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjMwOjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6MDA6MzIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTozMDoxNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAwOjU5OjU4IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6Mjk6NDIiLCAiZSI6IG51bGx9XSwgIjU1MDA0IjogW3siZCI6ICIyMDI2LTAzLTA1IDA1OjA2OjUyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDQ6MzU6MjUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDowNTozNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjM1OjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MDQ6NTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjozNDoyNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjA0OjA0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6MzU6MDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMTowMzo0OSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjMzOjU5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MDM6MzMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzozMzoyMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjAzOjMyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6MzI6MTgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjowMDo0MiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjMwOjU0IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MDA6NTMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDozMDoyNCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDE5OjU5OjU3IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTk6Mjk6NDYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDozOToxOCIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjA5OjAxIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6Mzg6NDQiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzowODoyOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjM4OjEyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6MDc6NTUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTozNzozOSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjA3OjIzIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6Mzc6MDYiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMDowNjo1MCIsICJlIjogbnVsbH1dLCAiNTUwMDUiOiBbeyJkIjogIjIwMjYtMDMtMDUgMDQ6NTQ6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwNDoyMzoyNSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAzOjUzOjM2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDM6MjM6MDkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMjo1MzoyNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAyOjIzOjA1IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDE6NTE6MzgiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNSAwMToyMjozNyIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA1IDAwOjUxOjIyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDUgMDA6MjA6NDUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMzo1MDo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIzOjIwOjQ2IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjI6NTA6MzEiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMjoyMDozMSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIxOjQ3OjM5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMjE6MTg6MjkiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAyMDo0NzoxMiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDIwOjE4OjEyIiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMTk6NDY6NDUiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAxOToxNjo0NSIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA1OjMyOjQ5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDU6MDI6MzMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwNDozMjoxNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDA0OjAxOjU5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDM6MzE6NDMiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMzowMToyNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAyOjMxOjA5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDI6MDA6NTIiLCAiZSI6IG51bGx9LCB7ImQiOiAiMjAyNi0wMy0wNCAwMTozMDozNiIsICJlIjogbnVsbH0sIHsiZCI6ICIyMDI2LTAzLTA0IDAxOjAwOjE5IiwgImUiOiBudWxsfSwgeyJkIjogIjIwMjYtMDMtMDQgMDA6MzA6MDMiLCAiZSI6IG51bGx9XX0="));
+    
+    const datePicker = document.getElementById('datePicker');
+    const searchInput = document.getElementById('globalSearch');
+    const metaFilter = document.getElementById('metaFilter');
+    let chartTrend = null;
+    let chartStatus = null;
+    
+    // Auto refresh
+    let timeLeft = 300;
+    const refreshBar = document.getElementById('refresh-bar');
+    setInterval(() => {
+        timeLeft--;
+        if(timeLeft <= 0) location.reload();
+        refreshBar.style.width = ((300 - timeLeft) / 300 * 100) + '%';
+    }, 1000);
+
+    function init() {
+        datePicker.addEventListener('change', renderDashboard);
+        searchInput.addEventListener('keyup', applyFilters);
+        metaFilter.addEventListener('change', applyFilters);
+        renderDashboard();
     }
-    /*
-    function searchVehicle() {
-        const searchTerm = document.getElementById('search').value.toLowerCase();
-        const containerId = currentTab + '-body';
-        const noResultsId = 'no-results-' + currentTab;
-        const items = document.getElementById(containerId).querySelectorAll('.veiculo-item');
-        let hasResults = false;
-        items.forEach(item => {
-            const veiculoId = item.getAttribute('data-veiculo-nome').toLowerCase();
-            const matchesSearch = searchTerm === '' || veiculoId.includes(searchTerm);
-            if (matchesSearch) {
-                item.style.display = (currentTab === 'inativos') ? 'table-row' : 'block';
-                hasResults = true;
-            } else { item.style.display = 'none'; }
+
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme');
+        body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+
+    function switchTab(id) {
+        document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(e => e.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        
+        const index = id === 'tab-online' ? 0 : id === 'tab-critical' ? 1 : 2;
+        document.querySelectorAll('.tab-item')[index].classList.add('active');
+    }
+
+    function getLatestEodVersion() {
+        let maxVer = 0.0;
+        Object.values(METADATA).forEach(m => { 
+            let v = parseFloat(m.eod); 
+            if(!isNaN(v) && v > maxVer) maxVer = v; 
         });
-        document.getElementById(noResultsId).style.display = hasResults ? 'none' : 'block';
+        return maxVer;
     }
-    function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
-    */
-    const modal = document.getElementById('vehicleModal');
-    function showVehicleDetails(prefixo) {
-        const modalTitle = document.getElementById('modalTitle');
-        const vehicleDetails = document.getElementById('vehicleDetails');
-        const comunicacoesList = document.getElementById('comunicacoesList');
-        const veiculo = veiculoData[prefixo] || {};
-        const comunicacoes = comunicacoesData[prefixo] || [];
-        modalTitle.textContent = `Veículo ${prefixo}`;
-        vehicleDetails.innerHTML = `
-            <div><strong>Prefixo:</strong> ${prefixo}</div>
-            <div><strong>Série:</strong> ${veiculo.serie || 'N/A'}</div>
-            <div><strong>Versão:</strong> ${veiculo.versao || 'N/A'}</div>
-            <div><strong>EOD:</strong> ${veiculo.eod || 'N/A'}</div>`;
-        comunicacoesList.innerHTML = '';
-        if (comunicacoes.length > 0) {
-            comunicacoes.forEach(com => {
-                const jsDate = com.dataHora.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3');
-                const periodoEmoji = getPeriodoEmoji(new Date(jsDate));
-                const div = document.createElement('div');
-                div.className = 'comunicacao-item';
-                div.innerHTML = `<span class="periodo-emoji">${periodoEmoji}</span> <strong>${com.dataHora || 'N/A'}</strong><br>`;
-                comunicacoesList.appendChild(div);
+
+    function getDatesInRange(startDateStr, daysBack) {
+        const dates = [];
+        const parts = startDateStr.split('-');
+        const baseDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        for (let i = 0; i < daysBack; i++) {
+            const d = new Date(baseDate);
+            d.setDate(baseDate.getDate() - i);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dates.push(`${y}-${m}-${day}`);
+        }
+        return dates;
+    }
+
+    function renderDashboard() {
+        const selectedDateStr = datePicker.value;
+        const lists = { 
+            online: document.getElementById('list-online'), 
+            offline: document.getElementById('list-offline'), 
+            critical: document.getElementById('list-critical') 
+        };
+        Object.values(lists).forEach(l => l.innerHTML = '');
+
+        let counts = { online: 0, offline: 0, critical: 0, total: 0 };
+        const maxEod = getLatestEodVersion();
+        const selParts = selectedDateStr.split('-');
+        const dateEndObj = new Date(parseInt(selParts[0]), parseInt(selParts[1])-1, parseInt(selParts[2]), 23, 59, 59);
+        const dateStartObj = new Date(parseInt(selParts[0]), parseInt(selParts[1])-1, parseInt(selParts[2]), 0, 0, 0);
+
+        FROTA.forEach(veiculo => {
+            counts.total++;
+            const logs = HISTORY[veiculo] || [];
+            let lastLog = null;
+
+            for (let log of logs) { 
+                const logDate = new Date(log.d.replace(' ', 'T'));
+                if (logDate <= dateEndObj) { lastLog = log; break; } 
+            }
+
+            const meta = METADATA[veiculo] || {};
+            const eodVal = parseFloat(meta.eod) || 0;
+            const isOutdated = eodVal < maxEod;
+            
+            const searchData = `${veiculo} ${meta.versao} ${meta.eod} ${lastLog ? lastLog.e : ''}`.toLowerCase();
+            const rowAttr = `data-search="${searchData}" data-outdated="${isOutdated}" data-error="${lastLog && lastLog.e ? 'true' : 'false'}"`;
+
+            if (!lastLog) {
+                counts.offline++;
+                const row = `<tr ${rowAttr}><td><strong>${veiculo}</strong></td><td><span class="badge badge-offline">SEM DADOS</span></td><td>Nunca</td><td>-</td></tr>`;
+                lists.offline.insertAdjacentHTML('beforeend', row);
+                return;
+            }
+
+            const lastDate = new Date(lastLog.d.replace(' ', 'T'));
+            const isToday = (lastDate >= dateStartObj && lastDate <= dateEndObj);
+
+            if (isToday) {
+                if (lastLog.e) {
+                    counts.critical++;
+                    const row = `<tr ${rowAttr} onclick="showDetails('${veiculo}')" style="cursor:pointer">
+                        <td><strong>${veiculo}</strong></td>
+                        <td><span class="badge badge-error">ERRO</span></td>
+                        <td class="text-danger">${escapeHtml(lastLog.e)}</td>
+                        <td>${lastLog.d.split(' ')[1]}</td>
+                        <td><small>${meta.versao || '-'}</small></td>
+                    </tr>`;
+                    lists.critical.insertAdjacentHTML('beforeend', row);
+                } else {
+                    counts.online++;
+                    const cardClass = isOutdated ? 'v-card outdated' : 'v-card';
+                    const div = `
+                    <div class="${cardClass}" ${rowAttr} onclick="showDetails('${veiculo}')">
+                        <div class="v-header">
+                            <span class="v-id">${veiculo}</span>
+                            <span style="color:var(--success)">●</span>
+                        </div>
+                        <div class="v-time">🕒 ${lastLog.d.split(' ')[1]}</div>
+                        <div class="v-meta">v${meta.versao || '?'} | EOD ${meta.eod || '?'}</div>
+                    </div>`;
+                    lists.online.insertAdjacentHTML('beforeend', div);
+                }
+            } else {
+                counts.offline++;
+                const oneDay = 86400000;
+                const d1 = new Date(dateStartObj.getFullYear(), dateStartObj.getMonth(), dateStartObj.getDate());
+                const d2 = new Date(lastDate.getFullYear(), lastDate.getMonth(), lastDate.getDate());
+                const diffDays = Math.round(Math.abs((d1 - d2) / oneDay));
+                
+                const row = `<tr ${rowAttr} onclick="showDetails('${veiculo}')" style="cursor:pointer">
+                    <td><strong>${veiculo}</strong></td>
+                    <td><span class="badge badge-offline">OFFLINE</span></td>
+                    <td>${formatDateBr(lastLog.d)}</td>
+                    <td>${diffDays} dia(s)</td>
+                </tr>`;
+                lists.offline.insertAdjacentHTML('beforeend', row);
+            }
+        });
+
+        updateKPIs(counts);
+        applyFilters(); 
+        renderCharts(selectedDateStr, counts);
+    }
+
+    function updateKPIs(counts) {
+        document.getElementById('kpi-online').innerText = counts.online;
+        document.getElementById('kpi-offline').innerText = counts.offline;
+        document.getElementById('kpi-critical').innerText = counts.critical;
+        
+        const active = counts.online + counts.critical;
+        const rate = active > 0 ? ((counts.online / active) * 100).toFixed(1) : 0;
+        document.getElementById('kpi-rate').innerText = rate + '%';
+
+        document.getElementById('empty-online').classList.toggle('hidden', counts.online > 0);
+        document.getElementById('empty-offline').classList.toggle('hidden', counts.offline > 0);
+        document.getElementById('empty-critical').classList.toggle('hidden', counts.critical > 0);
+    }
+
+    function applyFilters() {
+        const term = searchInput.value.toLowerCase();
+        const filterType = metaFilter.value;
+
+        const filterItem = (el) => {
+            const searchData = el.getAttribute('data-search');
+            const outdated = el.getAttribute('data-outdated') === 'true';
+            const hasError = el.getAttribute('data-error') === 'true';
+            
+            let show = true;
+            if (term && searchData.indexOf(term) === -1) show = false;
+            if (filterType === 'old_eod' && !outdated) show = false;
+            if (filterType === 'has_error' && !hasError) show = false;
+            
+            el.style.display = show ? '' : 'none';
+        };
+
+        document.querySelectorAll('.v-card').forEach(filterItem);
+        document.querySelectorAll('tbody tr').forEach(filterItem);
+    }
+
+    function renderCharts(dateStr, counts) {
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        if(chartStatus) chartStatus.destroy();
+        
+        const isDark = document.body.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#cbd5e1' : '#334155';
+
+        chartStatus = new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: { 
+                labels: ['Online', 'Erro', 'Offline'], 
+                datasets: [{ 
+                    data: [counts.online, counts.critical, counts.offline], 
+                    backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+                    borderWidth: 0
+                }] 
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: textColor } } } 
+            }
+        });
+
+        const dateList = getDatesInRange(dateStr, 30);
+        const labels = [];
+        const dataOnline = [];
+        const dataErrors = [];
+
+        for(let i = dateList.length - 1; i >= 0; i--) {
+            const isoDate = dateList[i];
+            const parts = isoDate.split('-');
+            labels.push(`${parts[2]}/${parts[1]}`);
+
+            let dayOnline = 0;
+            let dayError = 0;
+
+            FROTA.forEach(v => {
+                const logs = HISTORY[v] || [];
+                const log = logs.find(l => l.d.startsWith(isoDate));
+                if(log) {
+                    if(log.e) dayError++; else dayOnline++;
+                }
             });
-        } else { comunicacoesList.innerHTML = '<div>Nenhuma comunicação registrada</div>'; }
-        modal.style.display = 'block';
+            dataOnline.push(dayOnline);
+            dataErrors.push(dayError);
+        }
+
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        if(chartTrend) chartTrend.destroy();
+        chartTrend = new Chart(ctxTrend, {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [ 
+                    { label: 'Sucesso', data: dataOnline, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: true, pointRadius: 2 }, 
+                    { label: 'Erros', data: dataErrors, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', tension: 0.3, fill: true, pointRadius: 2 } 
+                ] 
+            },
+            options: { 
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false }, 
+                plugins: { legend: { labels: { color: textColor } } }, 
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: isDark ? '#334155' : '#e2e8f0' }, ticks: { color: textColor } },
+                    x: { grid: { display: false }, ticks: { color: textColor } }
+                } 
+            }
+        });
     }
-    function closeModal() { modal.style.display = 'none'; }
-    function getPeriodoEmoji(date) {
-        if (!date || isNaN(date)) return '';
-        const hora = date.getHours();
-        if (hora >= 0 && hora < 6) return "🌙";
-        if (hora >= 6 && hora < 12) return "☀️";
-        if (hora >= 12 && hora < 18) return "🌤️";
-        return "🌆";
+
+    function exportData() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Prefixo;Status;Data;Hora;Erro;Versao;EOD\n";
+        
+        FROTA.forEach(veiculo => {
+            const meta = METADATA[veiculo] || {};
+            const logs = HISTORY[veiculo] || [];
+            const lastLog = logs[0]; 
+            
+            let status = "OFFLINE";
+            let erro = "";
+            let data = "";
+            let hora = "";
+
+            if (lastLog) {
+                const d = lastLog.d.split(' ');
+                data = d[0];
+                hora = d[1];
+                if (lastLog.e) {
+                    status = "ERRO";
+                    erro = lastLog.e.replace(/;/g, ",");
+                } else {
+                    status = "ONLINE";
+                }
+            }
+
+            csvContent += `${veiculo};${status};${data};${hora};${erro};${meta.versao || ''};${meta.eod || ''}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `relatorio_frota_${datePicker.value}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
-    window.onclick = function(event) {
-        if (event.target == modal) { modal.style.display = 'none'; }
+
+    function sortTable(n, tableId) {
+        var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+        table = document.getElementById(tableId).parentNode; 
+        switching = true; dir = "asc"; 
+        while (switching) {
+            switching = false;
+            rows = table.rows;
+            for (i = 0; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                x = rows[i].getElementsByTagName("TD")[n]; 
+                y = rows[i + 1].getElementsByTagName("TD")[n];
+                if (dir == "asc") { 
+                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) { shouldSwitch = true; break; } 
+                } else { 
+                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) { shouldSwitch = true; break; } 
+                }
+            }
+            if (shouldSwitch) { 
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true; switchcount ++; 
+            } else { 
+                if (switchcount == 0 && dir == "asc") { dir = "desc"; switching = true; } 
+            }
+        }
     }
-    document.addEventListener('DOMContentLoaded', () => {
-        showTab('inativos');
-    });
+
+    function formatDateBr(isoStr) { 
+        if(!isoStr || isoStr === 'N/A') return 'N/A';
+        const [date, time] = isoStr.split(' '); 
+        return date.split('-').reverse().join('/') + ' ' + time.substring(0,5);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    const modal = document.getElementById('modalInfo');
+    
+    function showDetails(veiculo) {
+        const meta = METADATA[veiculo] || {};
+        const logs = HISTORY[veiculo] || [];
+        const last = logs[0] || {d:'N/A'};
+        
+        let erroHtml = last.e ? `<div style="background:rgba(239, 68, 68, 0.1); color:#ef4444; padding:10px; border-radius:6px; margin-bottom:15px;"><strong>⚠️ Erro Recente:</strong> ${escapeHtml(last.e)}</div>` : '';
+        
+        let histHtml = '<div style="margin-top:20px;"><h4 style="margin-bottom:10px;">Histórico Recente</h4><div style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">';
+        histHtml += '<table style="min-width:100%; font-size:0.9rem;">';
+        logs.slice(0, 10).forEach(l => {
+             const color = l.e ? '#ef4444' : '#10b981';
+             const icon = l.e ? '✖' : '✔';
+             histHtml += `<tr><td style="color:${color}; width:20px;">${icon}</td><td>${formatDateBr(l.d)}</td><td style="color:#64748b">${l.e ? escapeHtml(l.e) : 'Sucesso'}</td></tr>`;
+        });
+        histHtml += '</table></div></div>';
+
+        document.getElementById('m-title').innerHTML = `Veículo <strong>${escapeHtml(veiculo)}</strong>`;
+        document.getElementById('m-body').innerHTML = `
+            <div style="display:flex; gap:15px; margin-bottom:15px;">
+                <div style="flex:1; background:var(--bg); padding:10px; border-radius:8px;">
+                    <div style="font-size:0.75rem; color:var(--text-light);">Versão</div>
+                    <div style="font-weight:bold;">${escapeHtml(meta.versao || 'N/A')}</div>
+                </div>
+                <div style="flex:1; background:var(--bg); padding:10px; border-radius:8px;">
+                    <div style="font-size:0.75rem; color:var(--text-light);">EOD</div>
+                    <div style="font-weight:bold;">${escapeHtml(meta.eod || 'N/A')}</div>
+                </div>
+                <div style="flex:1; background:var(--bg); padding:10px; border-radius:8px;">
+                    <div style="font-size:0.75rem; color:var(--text-light);">Série</div>
+                    <div style="font-weight:bold;">${escapeHtml(meta.serie || 'N/A')}</div>
+                </div>
+            </div>
+            ${erroHtml}
+            ${histHtml}
+        `;
+        modal.style.display = "block";
+    }
+
+    function closeModal() { modal.style.display = "none"; }
+    window.onclick = function(e) { if(e.target == modal) closeModal(); }
+
+    init();
 </script>
-</body></html>
+</body>
+</html>
